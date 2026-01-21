@@ -1,0 +1,76 @@
+# --------------------
+# Python
+# --------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+env/
+venv/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --------------------
+# IDE / Editor
+# --------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# --------------------
+# OS / System
+# --------------------
+.DS_Store
+Thumbs.db
+*.log
+*.sqlite3
+
+# --------------------
+# Secrets / Configs
+# --------------------
+# Ignore all config files that contain IPs, API keys, or credentials
+config.py
+config.ini
+*.key
+*.pem
+*.crt
+*.env
+
+# --------------------
+# Cache / Temp
+# --------------------
+*.tmp
+*.bak
+*.swp
+*.DS_Store
+temp/
+tmp/
+
+# --------------------
+# Node / Web (if used)
+# --------------------
+node_modules/
+dist/
+build/
+
+# --------------------
+# Images / Generated Files (optional)
+# --------------------
+# Ignore uploaded/generated images if you want
+uploads/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# --------------------
+# Logs
+# --------------------
+*.log
+logs/
