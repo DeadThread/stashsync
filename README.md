@@ -29,7 +29,6 @@ setup:
       - "Edit `config.py` and fill in:"
       - "  - STASH_BASE_URL and STASH_API_KEY"
       - "  - HAMSTER_UPLOAD_URL and HAMSTER_API_KEY"
-      - "Do not commit your `config.py` — it is ignored by Git."
 
 running:
 
