@@ -43,5 +43,5 @@ running:
 notes:
 
   - "Make sure FFmpeg is present in the root of the app."
-  - "All sensitive information is stored in `config.py` (which is ignored by Git)."
+  - "All sensitive information is stored in `config.py`."
   - "Development is done in the `dev` branch; stable releases are in `master`."
