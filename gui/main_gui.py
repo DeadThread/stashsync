@@ -130,7 +130,15 @@ def create_main_gui(
     ttk.Label(studio_frame, text="Studio").pack(side="left", padx=(0, 10))
     studio_entry = ttk.Entry(studio_frame, textvariable=studio_var, width=50)
     studio_entry.pack(side="left")
-    ttk.Button(studio_frame, text="Copy", width=6, command=lambda: root.clipboard_append(studio_var.get())).pack(side="left", padx=5)
+    ttk.Button(
+        studio_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(studio_var.get())
+        )
+    ).pack(side="left", padx=5)
 
     # --------------------
     # Title
@@ -141,7 +149,15 @@ def create_main_gui(
     ttk.Label(title_frame, text="Title").pack(side="left", padx=(0, 10))
     title_entry = ttk.Entry(title_frame, textvariable=title_var, width=50)
     title_entry.pack(side="left")
-    ttk.Button(title_frame, text="Copy", width=6, command=lambda: root.clipboard_append(title_var.get())).pack(side="left", padx=5)
+    ttk.Button(
+        title_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(title_var.get())
+        )
+    ).pack(side="left", padx=5)
 
     # --------------------
     # Description
