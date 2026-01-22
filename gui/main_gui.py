@@ -199,14 +199,13 @@ def create_main_gui(
     tags_copy_btn.grid(row=0, column=2, padx=(5, 0))
     tags_frame.columnconfigure(1, weight=1)
 
-    # --------------------
-    # Generate & BBCode
-    # --------------------
+    # Generate button
     generate_btn = ttk.Button(left_panel, text="Generate & Upload Images", state="disabled")
     generate_btn.pack(fill="x", pady=(5, 5))
 
+    # BBCode Text (do NOT expand vertically)
     bbcode_text = scrolledtext.ScrolledText(left_panel, height=8, wrap="word")
-    bbcode_text.pack(fill="both", expand=True)
+    bbcode_text.pack(fill="x", pady=(0,5))  # only fill horizontally, not vertically
 
     # Copy BBCode Button
     bbcode_copy_btn = ttk.Button(
@@ -218,18 +217,59 @@ def create_main_gui(
             root.clipboard_append(bbcode_text.get("1.0", tk.END).strip())
         )
     )
-    bbcode_copy_btn.pack(pady=(5, 10))
+    bbcode_copy_btn.pack(pady=(0, 10))
+
 
     # --------------------
-    # Right Panel (Images)
+    # Studio Images
     # --------------------
     studio_images_frame = ttk.LabelFrame(right_panel, text="Studio Images", padding=10)
     studio_images_frame.pack(fill="x", pady=(0, 10))
     studio_image_label = ttk.Label(studio_images_frame, text="No image", relief="solid")
     studio_image_label.pack(fill="both", expand=True, padx=5, pady=5)
 
+    # --------------------
+    # Cover Image
+    # --------------------
+    cover_image_frame = ttk.LabelFrame(right_panel, text="Cover Image", padding=10)
+    cover_image_frame.pack(fill="x", pady=(0, 10))  # <--- small gap only
+
+    cover_image_label = ttk.Label(cover_image_frame, text="No image", relief="solid")
+    cover_image_label.pack(fill="both", expand=True, padx=5, pady=5)
+
+    cover_image_data = {}  # storage for cover image
+
+    # --------------------
+    # Cover Image URL 
+    # --------------------
+    caption_var = tk.StringVar()
+    caption_frame = ttk.Frame(right_panel)
+    caption_frame.pack(fill="x", pady=(0, 5))  # snug under cover image
+
+    # Label
+    ttk.Label(caption_frame, text="Cover Image URL").pack(side="left", padx=(0, 5))
+
+    # Read-only Entry
+    caption_entry = ttk.Entry(caption_frame, textvariable=caption_var, state="readonly")
+    caption_entry.pack(side="left", fill="x", expand=True)
+
+    # Copy button
+    ttk.Button(
+        caption_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(caption_var.get())
+        )
+    ).pack(side="left", padx=(5, 0))    
+
+    # --------------------
+    # Performer Images
+    # --------------------
     performer_images_frame = ttk.LabelFrame(right_panel, text="Performer Images", padding=10)
-    performer_images_frame.pack(fill="both", expand=True)
+    performer_images_frame.pack(fill="both", expand=True, pady=(0, 0))  # <--- snug under cover
+
     performer_canvas = tk.Canvas(performer_images_frame, height=300)
     performer_scrollbar = ttk.Scrollbar(performer_images_frame, orient="vertical", command=performer_canvas.yview)
     performer_scrollable = ttk.Frame(performer_canvas)
@@ -241,6 +281,7 @@ def create_main_gui(
     performer_canvas.configure(yscrollcommand=performer_scrollbar.set)
     performer_canvas.pack(side="left", fill="both", expand=True)
     performer_scrollbar.pack(side="right", fill="y")
+
 
     # --------------------
     # Storage
@@ -265,8 +306,10 @@ def create_main_gui(
                 tags_text,
                 generate_btn,
                 studio_image_label,
+                cover_image_label,         # <--- new
                 performer_scrollable,
                 studio_image_data,
+                cover_image_data,          # <--- new
                 performer_images_data,
                 current_scene_data,
                 stash_session,
@@ -281,19 +324,19 @@ def create_main_gui(
     # --------------------
     def on_generate_click():
         nonlocal current_scene_data
-        
+
         # Create a session for Stash API calls
         import requests
         stash_session = requests.Session()
-        
+
         # --- Read scene ID from entry ---
         scene_id = stash_id_entry.get().strip()
         if not scene_id:
             messagebox.showerror("Error", "Scene ID is required for poster upload")
             return
-        current_scene_data['scene_id'] = scene_id  # <-- add scene_id here
+        current_scene_data['scene_id'] = scene_id
 
-        # Now generate and upload images
+        # --- Generate and upload images ---
         bbcode_lines = generate_and_upload(
             current_scene_data=current_scene_data,
             studio_image_data=studio_image_data,
@@ -304,181 +347,130 @@ def create_main_gui(
             stash_session=stash_session,
             stash_url=STASH_BASE_URL
         )
-        
+
         if not bbcode_lines:
             return
-        
-        # Insert BBCode into text widget
-        bbcode_text.delete("1.0", tk.END)
-        bbcode_text.insert(tk.END, "\n".join(bbcode_lines))
 
-        
-        # Generate the BBCode content matching the document format
-        bbcode_lines = []
-        
-        # Start with the outer table structure
-        bbcode_lines.append("[bg=#202b33][color=#F5F8FA][font=Helvetica][table=nopad,nball,vat][tr][td=#202b33][/td]")
-        bbcode_lines.append("")
-        bbcode_lines.append("[td=400px,#202b33][bg=90%][size=2]")
-        bbcode_lines.append("")
-        
-        # Studio logo (centered)
+        # --- Update Cover Image URL read-only entry ---
+        caption_var.set(current_scene_data.get('poster_url', ''))
+
+        # --- Build formatted BBCode for the text widget ---
+        bbcode_formatted = []
+
+        # Outer table
+        bbcode_formatted.append("[bg=#202b33][color=#F5F8FA][font=Helvetica][table=nopad,nball,vat][tr][td=#202b33][/td]")
+        bbcode_formatted.append("[td=400px,#202b33][bg=90%][size=2]")
+
+        # Studio logo
         studio_url = studio_image_data.get('url', '') if isinstance(studio_image_data, dict) else ''
         if studio_url:
-            bbcode_lines.append(f"[center][img=100]{studio_url}[/img][/center]")
-            bbcode_lines.append("")
-        
+            bbcode_formatted.append(f"[center][img=100]{studio_url}[/img][/center]")
+
         # Title and date
         title = title_var.get() or current_scene_data.get('title', '')
         date = current_scene_data.get('date', '')
-        bbcode_lines.append(f"[size=4][font=Arial Black]{title}[/font][/size]")
-        bbcode_lines.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{date}")
-        bbcode_lines.append("")
-        bbcode_lines.append("")
-        
-        # Details section
+        bbcode_formatted.append(f"[size=4][font=Arial Black]{title}[/font][/size]")
+        bbcode_formatted.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{date}")
+
+        # Details
         details = current_scene_data.get('details', '')
-        bbcode_lines.append("[b]Details[/b]")
-        bbcode_lines.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{details}")
-        bbcode_lines.append("")
-        bbcode_lines.append("")
-        
-        # Includes section (tags/categories)
+        bbcode_formatted.append("[b]Details[/b]")
+        bbcode_formatted.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{details}")
+
+        # Tags / Includes
         tags = current_scene_data.get('tags', [])
         if tags:
             tag_names = [tag.get('name', '') for tag in tags if isinstance(tag, dict)]
             if tag_names:
-                bbcode_lines.append("[b]Includes[/b]")
-                bbcode_lines.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{', '.join(tag_names)}")
-                bbcode_lines.append("")
-                bbcode_lines.append("")
-        
-        # Performers section
-        bbcode_lines.append("[b]Performers[/b][br]")
-        bbcode_lines.append("[table=nball,left][tr]")
-        bbcode_lines.append("")
-        
-        # Add performer cards
+                bbcode_formatted.append("[b]Includes[/b]")
+                bbcode_formatted.append(f"[imgnm]https://hamsterimg.net/images/2025/06/21/pad.png[/imgnm]{', '.join(tag_names)}")
+
+        # Performers
+        bbcode_formatted.append("[b]Performers[/b][br]")
+        bbcode_formatted.append("[table=nball,left][tr]")
+
         performers = current_scene_data.get('performers', [])
-        
         for i, performer in enumerate(performers):
-            # Handle if performer is a string or dict
             if isinstance(performer, dict):
                 perf_name = performer.get('name', str(performer))
             else:
                 perf_name = str(performer)
-            
-            # Get performer image URL from performer_images_data (updated by generate_and_upload)
+
             perf_img = ''
             if isinstance(performer_images_data, list) and i < len(performer_images_data):
-                if isinstance(performer_images_data[i], dict):
-                    perf_img = performer_images_data[i].get('url', '')
-                elif isinstance(performer_images_data[i], str):
-                    perf_img = performer_images_data[i]
-            elif isinstance(performer_images_data, dict):
-                perf_img = performer_images_data.get(perf_name, {}).get('url', '') if isinstance(performer_images_data.get(perf_name), dict) else performer_images_data.get(perf_name, '')
-            
+                perf_img = performer_images_data[i].get('url', '') if isinstance(performer_images_data[i], dict) else performer_images_data[i]
+
             perf_tag = perf_name.lower().replace(' ', '.')
-            
-            bbcode_lines.append(f"[td=#30404d,124px][img=123]{perf_img}[/img][url=/torrents.php?taglist={perf_tag}][size=3][/size][color=white][bg=90%]{perf_name}")
-            bbcode_lines.append("[br][/bg][/color][/url][/td]")
-            
+            bbcode_formatted.append(
+                f"[td=#30404d,124px][img=123]{perf_img}[/img][url=/torrents.php?taglist={perf_tag}]"
+                f"[size=3][/size][color=white][bg=90%]{perf_name}[br][/bg][/color][/url][/td]"
+            )
+
             if i < len(performers) - 1:
-                bbcode_lines.append("")
-                bbcode_lines.append("[td=8px][/td]")
-            bbcode_lines.append("")
-        
-        bbcode_lines.append("[td][/td][/tr][/table]")
-        bbcode_lines.append("")
-        bbcode_lines.append("")
-        bbcode_lines.append("")
-        bbcode_lines.append("[/size][/bg][/td]")
-        bbcode_lines.append("")
-        bbcode_lines.append("")
-        
-        # Right column with video info and screens
-        bbcode_lines.append("[td=vat,800px][bg=98%]")
-        
-        # Poster image
+                bbcode_formatted.append("[td=8px][/td]")
+
+        bbcode_formatted.append("[td][/td][/tr][/table]")
+        bbcode_formatted.append("[/size][/bg][/td]")
+
+        # Right column with poster, video info, screens, contact sheet
+        bbcode_formatted.append("[td=vat,800px][bg=98%]")
+
         poster_url = current_scene_data.get('poster_url', '')
         if poster_url:
-            bbcode_lines.append(f"[imgnm]{poster_url}[/imgnm]")
-        
-        # Video specifications bar
+            bbcode_formatted.append(f"[imgnm]{poster_url}[/imgnm]")
+
         video_file = current_scene_data.get('files', [{}])[0]
         duration_seconds = video_file.get('duration', 0)
-        
-        # Format duration
         hours = int(duration_seconds // 3600)
         minutes = int((duration_seconds % 3600) // 60)
         seconds = int(duration_seconds % 60)
-        if hours > 0:
-            duration = f"{hours}:{minutes:02d}:{seconds:02d}"
-        else:
-            duration = f"{minutes}:{seconds:02d}"
-        
+        duration = f"{hours}:{minutes:02d}:{seconds:02d}" if hours > 0 else f"{minutes}:{seconds:02d}"
+
         width = video_file.get('width', 3840)
         height = video_file.get('height', 2160)
         resolution = f"{width}×{height}"
-        
-        # Get framerate
+
         frame_rate = video_file.get('frame_rate', 29.97)
         fps = f"{frame_rate:.2f} fps"
-        
-        # Get bitrate
+
         bit_rate = video_file.get('bit_rate', 0)
-        if bit_rate > 0:
-            bitrate_mbps = bit_rate / 1_000_000
-            bitrate = f"{bitrate_mbps:.2f} Mb/s"
-        else:
-            bitrate = "18.22 Mb/s"
-        
-        codec = video_file.get('video_codec', 'h264') + "/" + video_file.get('audio_codec', 'aac')
-        
-        bbcode_lines.append("[bg=#30404d][color=#F0EEEB][size=2]")
-        bbcode_lines.append("[table=100%,nball,vam][tr]")
-        bbcode_lines.append("[td=16px][/td]")
-        bbcode_lines.append(f"[td]{duration}[/td]")
-        bbcode_lines.append(f"[td][align=right]mp4   {codec}   {resolution}   {bitrate}   {fps}[/align][/td]")
-        bbcode_lines.append("[td=16px][/td]")
-        bbcode_lines.append("[/tr][/table]")
-        bbcode_lines.append("[/size][/color][/bg]")
-        bbcode_lines.append("")
-        bbcode_lines.append("[size=2]")
-        
-        # Screens section
-        bbcode_lines.append("[b]Screens[/b]")
-        bbcode_lines.append("")
-        
-        # Add screenshot thumbnails - all on one line
+        bitrate = f"{bit_rate / 1_000_000:.2f} Mb/s" if bit_rate else "18.22 Mb/s"
+
+        codec = f"{video_file.get('video_codec', 'h264')}/{video_file.get('audio_codec', 'aac')}"
+
+        bbcode_formatted.append("[bg=#30404d][color=#F0EEEB][size=2]")
+        bbcode_formatted.append("[table=100%,nball,vam][tr][td=16px][/td]")
+        bbcode_formatted.append(f"[td]{duration}[/td]")
+        bbcode_formatted.append(f"[td][align=right]mp4   {codec}   {resolution}   {bitrate}   {fps}[/align][/td]")
+        bbcode_formatted.append("[td=16px][/td][/tr][/table][/size][/color][/bg]")
+        bbcode_formatted.append("[size=2]")
+
+        # Screenshots
+        bbcode_formatted.append("[b]Screens[/b]")
         screenshot_urls = current_scene_data.get('screenshot_urls', [])
         if screenshot_urls:
-            screen_line = ""
-            for screenshot_url in screenshot_urls:
-                screen_line += f"[img=200]{screenshot_url}[/img]"
-            bbcode_lines.append(screen_line)
-        bbcode_lines.append("")
-        
-        # Contact sheet in spoiler
+            line = "".join([f"[img=200]{url}[/img]" for url in screenshot_urls])
+            bbcode_formatted.append(line)
+
+        # Contact sheet
         contact_sheet_url = current_scene_data.get('contact_sheet_url', '')
         if contact_sheet_url:
-            bbcode_lines.append("[b]Contact Sheet[/b]")
-            bbcode_lines.append("")
-            bbcode_lines.append("[spoiler=Click to view]")
-            bbcode_lines.append(f"[img]{contact_sheet_url}[/img]")
-            bbcode_lines.append("[/spoiler]")
-        bbcode_lines.append("")
-        
-        bbcode_lines.append("[/size]")
-        bbcode_lines.append("[img]https://hamsterimg.net/images/2025/09/29/space.png[/img]")
-        bbcode_lines.append("[/bg][/td][td=#202b33][/td]")
-        bbcode_lines.append("[/tr][/table][/font][/color][/bg]")
-        
-        # Insert into text widget
-        if bbcode_lines:
-            bbcode_text.delete("1.0", tk.END)
-            bbcode_text.insert(tk.END, "\n".join(bbcode_lines))
+            bbcode_formatted.append("[b]Contact Sheet[/b]")
+            bbcode_formatted.append("[spoiler=Click to view]")
+            bbcode_formatted.append(f"[img]{contact_sheet_url}[/img]")
+            bbcode_formatted.append("[/spoiler]")
 
+        bbcode_formatted.append("[/size]")
+        bbcode_formatted.append("[img]https://hamsterimg.net/images/2025/09/29/space.png[/img]")
+        bbcode_formatted.append("[/bg][/td][td=#202b33][/td][/tr][/table][/font][/color][/bg]")
+
+        # Insert BBCode into text widget
+        bbcode_text.delete("1.0", tk.END)
+        bbcode_text.insert(tk.END, "\n".join(bbcode_formatted))
+
+
+    # --- Attach the handler to the button ---
     generate_btn.config(command=on_generate_click)
+
 
     return root
