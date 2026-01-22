@@ -95,13 +95,41 @@ def create_main_gui(
     # --------------------
     menubar = tk.Menu(root)
     root.config(menu=menubar)
+
+    # Settings menu
     settings_menu = tk.Menu(menubar, tearoff=0)
     menubar.add_cascade(label="Settings", menu=settings_menu)
+
+    # Path Mappings (existing)
     settings_menu.add_command(
         label="Path Mappings",
         command=lambda: open_path_mapping_dialog(root, save_path_mappings)
     )
 
+    # Variable to store Formatted Name
+    formatted_name_var = tk.StringVar()
+
+    # Function to edit Formatted Name
+    def edit_formatted_name():
+        edit_win = tk.Toplevel(root)
+        edit_win.title("Formatted Name")
+        edit_win.geometry("400x100")
+        edit_win.resizable(False, False)
+
+        # Label + Entry
+        ttk.Label(edit_win, text="Formatted Name:").pack(side="left", padx=(10, 5), pady=20)
+        formatted_name_entry = ttk.Entry(edit_win, textvariable=formatted_name_var, width=40)
+        formatted_name_entry.pack(side="left", padx=(0, 10), pady=20)
+
+        # OK button
+        ttk.Button(edit_win, text="OK", command=edit_win.destroy).pack(side="left")
+
+    # Add Formatted Name to Settings menu
+    settings_menu.add_command(label="Formatted Name", command=edit_formatted_name)
+
+    # --------------------
+    # Main container layout
+    # --------------------
     container = ttk.Frame(root)
     container.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -109,8 +137,11 @@ def create_main_gui(
     left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
     right_panel = ttk.Frame(container)
     right_panel.grid(row=0, column=1, sticky="nsew")
+
     container.columnconfigure(0, weight=1)
     container.columnconfigure(1, weight=0)
+
+
 
     # --------------------
     # Stash ID Entry
@@ -160,6 +191,25 @@ def create_main_gui(
     ).pack(side="left", padx=5)
 
     # --------------------
+    # Formatted Title
+    # --------------------
+    formatted_title_var = tk.StringVar()
+    formatted_title_frame = ttk.Frame(left_panel)
+    formatted_title_frame.pack(fill="x", pady=(0, 10))  # snug under Title
+    ttk.Label(formatted_title_frame, text="Formatted Title").pack(side="left", padx=(0, 10))
+    formatted_title_entry = ttk.Entry(formatted_title_frame, textvariable=formatted_title_var, width=50)
+    formatted_title_entry.pack(side="left")
+    ttk.Button(
+        formatted_title_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(formatted_title_var.get())
+        )
+    ).pack(side="left", padx=5)
+
+    # --------------------
     # Description
     # --------------------
     desc_frame = ttk.Frame(left_panel)
@@ -178,6 +228,7 @@ def create_main_gui(
     )
     desc_copy_btn.grid(row=0, column=2, padx=(5, 0))
     desc_frame.columnconfigure(1, weight=1)
+
 
     # --------------------
     # Tags
@@ -305,19 +356,21 @@ def create_main_gui(
                 desc_text,
                 tags_text,
                 generate_btn,
-                studio_image_label,
-                cover_image_label,         # <--- new
+                studio_image_label,         # existing
+                cover_image_label,          # existing
                 performer_scrollable,
                 studio_image_data,
-                cover_image_data,          # <--- new
+                cover_image_data,           # existing
                 performer_images_data,
                 current_scene_data,
+                formatted_title_var,        # <--- NEW: passes the Formatted Title StringVar
                 stash_session,
                 QUERY,
                 STASH_GRAPHQL_URL
             )
         )
     )
+
 
     # --------------------
     # Wire Generate Button
