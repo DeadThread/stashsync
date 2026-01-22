@@ -1,8 +1,11 @@
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 from utils.image_utils import download_stash_image, build_image_url, display_image
 from paths.path_mapper import load_path_mappings, map_path
 import requests
+
+
 
 def lookup(
     stash_id_entry,
@@ -54,8 +57,26 @@ def lookup(
         title_var.set(scene.get("title") or "")
         desc_text.delete("1.0", tk.END)
         desc_text.insert(tk.END, scene.get("details") or "")
+
+        # Format tags: lowercase, spaces → periods, remove special characters, separated by spaces
+        def clean_tag(tag_name):
+            # Lowercase
+            tag = tag_name.lower()
+            # Replace spaces with periods
+            tag = tag.replace(" ", ".")
+            # Remove all characters except letters, numbers, and periods
+            tag = re.sub(r"[^a-z0-9.]", "", tag)
+            # Collapse multiple periods into one
+            tag = re.sub(r"\.+", ".", tag)
+            # Strip leading/trailing periods
+            tag = tag.strip(".")
+            return tag
+
+        tags_formatted = " ".join(clean_tag(t["name"]) for t in scene.get("tags", []))
+
         tags_text.delete("1.0", tk.END)
-        tags_text.insert(tk.END, ", ".join(t["name"] for t in scene.get("tags", [])))
+        tags_text.insert(tk.END, tags_formatted)
+
 
         generate_btn.configure(state="normal" if scene.get("files") else "disabled")
 

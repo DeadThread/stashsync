@@ -7,6 +7,7 @@ from utils.lookup_utils import lookup, on_id_changed
 from utils.upload_utils import generate_and_upload
 from config import HAMSTER_API_KEY, HAMSTER_UPLOAD_URL, STASH_BASE_URL
 
+
 # --------------------
 # Path Mapping Dialog
 # --------------------
@@ -89,7 +90,9 @@ def create_main_gui(
     root.geometry("1100x750")
     root.resizable(False, False)
 
+    # --------------------
     # Menubar
+    # --------------------
     menubar = tk.Menu(root)
     root.config(menu=menubar)
     settings_menu = tk.Menu(menubar, tearoff=0)
@@ -110,7 +113,7 @@ def create_main_gui(
     container.columnconfigure(1, weight=0)
 
     # --------------------
-    # ID Entry
+    # Stash ID Entry
     # --------------------
     id_frame = ttk.Frame(left_panel)
     id_frame.pack(fill="x", pady=(0, 10))
@@ -118,24 +121,92 @@ def create_main_gui(
     stash_id_entry = ttk.Entry(id_frame, width=20)
     stash_id_entry.pack(side="left")
 
-    # Studio, Title, Description, Tags
+    # --------------------
+    # Studio
+    # --------------------
     studio_var = tk.StringVar()
-    title_var = tk.StringVar()
-    studio_entry = ttk.Entry(left_panel, textvariable=studio_var, width=60)
-    studio_entry.pack(fill="x", pady=(0, 10))
-    title_entry = ttk.Entry(left_panel, textvariable=title_var, width=60)
-    title_entry.pack(fill="x", pady=(0, 10))
-    desc_text = tk.Text(left_panel, height=8, wrap="word")
-    desc_text.pack(fill="x", pady=(0, 10))
-    tags_text = tk.Text(left_panel, height=4, wrap="word")
-    tags_text.pack(fill="x", pady=(0, 10))
+    studio_frame = ttk.Frame(left_panel)
+    studio_frame.pack(fill="x", pady=(0, 10))
+    ttk.Label(studio_frame, text="Studio").pack(side="left", padx=(0, 10))
+    studio_entry = ttk.Entry(studio_frame, textvariable=studio_var, width=50)
+    studio_entry.pack(side="left")
+    ttk.Button(studio_frame, text="Copy", width=6, command=lambda: root.clipboard_append(studio_var.get())).pack(side="left", padx=5)
 
+    # --------------------
+    # Title
+    # --------------------
+    title_var = tk.StringVar()
+    title_frame = ttk.Frame(left_panel)
+    title_frame.pack(fill="x", pady=(0, 10))
+    ttk.Label(title_frame, text="Title").pack(side="left", padx=(0, 10))
+    title_entry = ttk.Entry(title_frame, textvariable=title_var, width=50)
+    title_entry.pack(side="left")
+    ttk.Button(title_frame, text="Copy", width=6, command=lambda: root.clipboard_append(title_var.get())).pack(side="left", padx=5)
+
+    # --------------------
+    # Description
+    # --------------------
+    desc_frame = ttk.Frame(left_panel)
+    desc_frame.pack(fill="x", pady=(0, 10))
+    ttk.Label(desc_frame, text="Description").grid(row=0, column=0, sticky="w", padx=(0, 10))
+    desc_text = tk.Text(desc_frame, height=8, wrap="word")
+    desc_text.grid(row=0, column=1, sticky="ew")
+    desc_copy_btn = ttk.Button(
+        desc_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(desc_text.get("1.0", tk.END).strip())
+        )
+    )
+    desc_copy_btn.grid(row=0, column=2, padx=(5, 0))
+    desc_frame.columnconfigure(1, weight=1)
+
+    # --------------------
+    # Tags
+    # --------------------
+    tags_frame = ttk.Frame(left_panel)
+    tags_frame.pack(fill="x", pady=(0, 10))
+    ttk.Label(tags_frame, text="Tags").grid(row=0, column=0, sticky="w", padx=(0, 10))
+    tags_text = tk.Text(tags_frame, height=4, wrap="word")
+    tags_text.grid(row=0, column=1, sticky="ew")
+    tags_copy_btn = ttk.Button(
+        tags_frame,
+        text="Copy",
+        width=6,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(tags_text.get("1.0", tk.END).strip())
+        )
+    )
+    tags_copy_btn.grid(row=0, column=2, padx=(5, 0))
+    tags_frame.columnconfigure(1, weight=1)
+
+    # --------------------
+    # Generate & BBCode
+    # --------------------
     generate_btn = ttk.Button(left_panel, text="Generate & Upload Images", state="disabled")
     generate_btn.pack(fill="x", pady=(5, 5))
+
     bbcode_text = scrolledtext.ScrolledText(left_panel, height=8, wrap="word")
     bbcode_text.pack(fill="both", expand=True)
 
-    # Right Panel
+    # Copy BBCode Button
+    bbcode_copy_btn = ttk.Button(
+        left_panel,
+        text="Copy BBCode",
+        width=12,
+        command=lambda: (
+            root.clipboard_clear(),
+            root.clipboard_append(bbcode_text.get("1.0", tk.END).strip())
+        )
+    )
+    bbcode_copy_btn.pack(pady=(5, 10))
+
+    # --------------------
+    # Right Panel (Images)
+    # --------------------
     studio_images_frame = ttk.LabelFrame(right_panel, text="Studio Images", padding=10)
     studio_images_frame.pack(fill="x", pady=(0, 10))
     studio_image_label = ttk.Label(studio_images_frame, text="No image", relief="solid")
@@ -155,7 +226,9 @@ def create_main_gui(
     performer_canvas.pack(side="left", fill="both", expand=True)
     performer_scrollbar.pack(side="right", fill="y")
 
+    # --------------------
     # Storage
+    # --------------------
     studio_image_data = {}
     performer_images_data = []
     current_scene_data = {}

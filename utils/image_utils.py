@@ -4,6 +4,7 @@ import os
 import io
 import requests
 from PIL import Image, ImageTk
+from config import STASH_BASE_URL
 
 # --------------------
 # Session will be passed in or created externally
@@ -71,10 +72,14 @@ def upload_image_data_to_hamster(image_data, api_key: str, upload_url: str, file
         return None
 
 
-def build_image_url(image_path, base_url="http://192.168.1.109:9999"):
+def build_image_url(image_path, base_url=None):
     """Build complete image URL, handling both relative and absolute paths"""
     if not image_path:
         return None
+
+    # Use the config URL if no base_url is passed
+    if base_url is None:
+        base_url = STASH_BASE_URL
 
     if image_path.startswith("http://") or image_path.startswith("https://"):
         return image_path
@@ -82,7 +87,6 @@ def build_image_url(image_path, base_url="http://192.168.1.109:9999"):
     if image_path.startswith("/"):
         return f"{base_url}{image_path}"
     return f"{base_url}/{image_path}"
-
 
 def format_duration(seconds):
     """Format seconds into HH:MM:SS or MM:SS"""
