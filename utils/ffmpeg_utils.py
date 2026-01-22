@@ -29,6 +29,7 @@ def generate_contact_sheet(video_path, output_path, title, duration, dimensions)
         temp_dir = tempfile.mkdtemp()
         safe_duration = max(duration, total_thumbs + 1)
 
+        # Generate unique timestamps for contact sheet
         for i in range(total_thumbs):
             timestamp = (safe_duration / (total_thumbs + 1)) * (i + 1)
             frame_path = os.path.join(temp_dir, f"frame_{i:02d}.jpg")
@@ -64,11 +65,16 @@ def generate_contact_sheet(video_path, output_path, title, duration, dimensions)
             font_title = ImageFont.load_default()
             font_info = ImageFont.load_default()
 
+        # Calculate file size
+        file_size_bytes = os.path.getsize(video_path)
+        file_size_gb = file_size_bytes / (1024**3)
+        
         # Header
         draw.rectangle((0, 0, contact_width, HEADER_H), fill="white")
         draw.text((10, 10), title or "Untitled", fill="black", font=font_title)
         draw.text((10, 35), f"Duration: {format_duration(duration)}", fill="black", font=font_info)
         draw.text((10, 55), f"Dimensions: {dimensions}", fill="black", font=font_info)
+        draw.text((10, 75), f"Filesize: {file_size_gb:.2f}gb", fill="black", font=font_info)
 
         for idx, frame_path in enumerate(frame_files):
             row = idx // COLS
@@ -94,6 +100,10 @@ def generate_contact_sheet(video_path, output_path, title, duration, dimensions)
 # Individual Screens
 # --------------------
 def generate_individual_screens(video_path, output_dir, duration, count=10):
+    """
+    Generate individual screenshots at different timestamps than the contact sheet.
+    Uses offset timestamps to avoid duplicating contact sheet frames.
+    """
     if not os.path.exists(video_path):
         print(f"Video file does not exist: {video_path}")
         return []
@@ -101,10 +111,17 @@ def generate_individual_screens(video_path, output_dir, duration, count=10):
     os.makedirs(output_dir, exist_ok=True)
     screen_files = []
     safe_duration = max(duration, count + 1)
+    
+    # Start at a slightly offset position to avoid matching contact sheet frames
+    # and use a different distribution pattern
     interval = safe_duration / (count + 1)
-
+    offset = interval * 0.5  # Offset by half an interval
+    
     for i in range(1, count + 1):
-        timestamp = interval * i
+        timestamp = (interval * i) + offset
+        # Make sure we don't exceed duration
+        timestamp = min(timestamp, safe_duration - 1)
+        
         output_file = os.path.join(output_dir, f"screen_{i:02d}.jpg")
         cmd = [
             "ffmpeg", "-y",
@@ -117,6 +134,9 @@ def generate_individual_screens(video_path, output_dir, duration, count=10):
         result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
         if result.returncode == 0 and os.path.exists(output_file):
             screen_files.append(output_file)
+            print(f"[ffmpeg_utils] Screen {i} generated at {timestamp:.2f}s")
         else:
             print(f"Screen {i} failed: {result.stderr.strip()}")
+    
+    print(f"[ffmpeg_utils] Generated {len(screen_files)} individual screens")
     return screen_files
