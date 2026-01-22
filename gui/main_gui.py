@@ -5,6 +5,7 @@ from tkinter import ttk, messagebox, scrolledtext
 from paths.path_mapper import load_path_mappings
 from utils.lookup_utils import lookup, on_id_changed
 from utils.upload_utils import generate_and_upload
+from config import HAMSTER_API_KEY, HAMSTER_UPLOAD_URL, STASH_BASE_URL
 
 # --------------------
 # Path Mapping Dialog
@@ -192,26 +193,36 @@ def create_main_gui(
     def on_generate_click():
         nonlocal current_scene_data
         
-        # Create a session for Stash API calls if needed
-        # If you have a session variable elsewhere, use that instead
+        # Create a session for Stash API calls
         import requests
         stash_session = requests.Session()
-        # Add any auth headers if needed
-        # stash_session.headers.update({'ApiKey': 'your-api-key'})
         
-        # First, call generate_and_upload to handle uploads
-        old_bbcode = generate_and_upload(
+        # --- Read scene ID from entry ---
+        scene_id = stash_id_entry.get().strip()
+        if not scene_id:
+            messagebox.showerror("Error", "Scene ID is required for poster upload")
+            return
+        current_scene_data['scene_id'] = scene_id  # <-- add scene_id here
+
+        # Now generate and upload images
+        bbcode_lines = generate_and_upload(
             current_scene_data=current_scene_data,
             studio_image_data=studio_image_data,
             performer_images_data=performer_images_data,
             title_var=title_var,
             hamster_api_key=HAMSTER_API_KEY,
             hamster_upload_url=HAMSTER_UPLOAD_URL,
-            stash_session=stash_session
+            stash_session=stash_session,
+            stash_url=STASH_BASE_URL
         )
         
-        if not old_bbcode:
+        if not bbcode_lines:
             return
+        
+        # Insert BBCode into text widget
+        bbcode_text.delete("1.0", tk.END)
+        bbcode_text.insert(tk.END, "\n".join(bbcode_lines))
+
         
         # Generate the BBCode content matching the document format
         bbcode_lines = []

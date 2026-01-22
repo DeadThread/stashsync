@@ -140,3 +140,37 @@ def generate_individual_screens(video_path, output_dir, duration, count=10):
     
     print(f"[ffmpeg_utils] Generated {len(screen_files)} individual screens")
     return screen_files
+
+
+# --------------------
+# Generate video thumbnail
+# --------------------
+def generate_video_thumbnail(video_path, time_sec=30, width=300):
+    """
+    Generate a single-frame thumbnail from a video using ffmpeg.
+    Returns the path to the thumbnail file.
+    """
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video not found: {video_path}")
+
+    fd, thumb_path = tempfile.mkstemp(suffix="-thumbnail.jpg")
+    os.close(fd)  # let ffmpeg write to the file
+
+    cmd = [
+        "ffmpeg",
+        "-ss", str(time_sec),
+        "-i", video_path,
+        "-vf", f"thumbnail={width}",
+        "-frames:v", "1",
+        "-y",
+        thumb_path
+    ]
+
+    print(f"[ffmpeg_utils] Running ffmpeg command: {' '.join(cmd)}")
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(f"[ffmpeg_utils] ffmpeg output:\n{result.stdout}")
+
+    if not os.path.exists(thumb_path):
+        raise RuntimeError(f"Thumbnail was not created: {thumb_path}")
+
+    return thumb_path

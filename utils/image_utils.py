@@ -9,15 +9,27 @@ from PIL import Image, ImageTk
 # Session will be passed in or created externally
 # --------------------
 
-def download_stash_image(image_url, session: requests.Session):
-    """Download image from Stash with authentication"""
+def download_stash_image(image_url, session, api_key=None):
+    """
+    Download an image from Stash, including API key authentication if needed.
+    Returns bytes of the image.
+    """
+    headers = {}
+    if api_key:
+        headers["ApiKey"] = api_key  # Stash uses ApiKey header
+
     try:
-        response = session.get(image_url, timeout=10)
+        response = session.get(image_url, headers=headers, timeout=10)
         response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "")
+        if "image" not in content_type:
+            print(f"[image_utils] Warning: URL did not return an image. Content-Type: {content_type}")
+            return None
         return response.content
     except Exception as e:
-        print(f"[image_utils] Download error for {image_url}: {e}")
+        print(f"[image_utils] Failed to download image: {e}")
         return None
+
 
 
 def upload_file_to_hamster(file_path, api_key: str, upload_url: str):
