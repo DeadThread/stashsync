@@ -106,26 +106,6 @@ def create_main_gui(
         command=lambda: open_path_mapping_dialog(root, save_path_mappings)
     )
 
-    # Variable to store Formatted Name
-    formatted_name_var = tk.StringVar()
-
-    # Function to edit Formatted Name
-    def edit_formatted_name():
-        edit_win = tk.Toplevel(root)
-        edit_win.title("Formatted Name")
-        edit_win.geometry("400x100")
-        edit_win.resizable(False, False)
-
-        # Label + Entry
-        ttk.Label(edit_win, text="Formatted Name:").pack(side="left", padx=(10, 5), pady=20)
-        formatted_name_entry = ttk.Entry(edit_win, textvariable=formatted_name_var, width=40)
-        formatted_name_entry.pack(side="left", padx=(0, 10), pady=20)
-
-        # OK button
-        ttk.Button(edit_win, text="OK", command=edit_win.destroy).pack(side="left")
-
-    # Add Formatted Name to Settings menu
-    settings_menu.add_command(label="Formatted Name", command=edit_formatted_name)
 
     # --------------------
     # Main container layout
@@ -370,7 +350,6 @@ def create_main_gui(
             )
         )
     )
-
 
     # --------------------
     # Wire Generate Button

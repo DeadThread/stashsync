@@ -26,15 +26,27 @@ def format_scene_name(template: str, scene_data: dict) -> str:
 
     name = template
 
+    # Extract resolution from files
+    resolution = ""
+    files = scene_data.get("files", [])
+    if files and len(files) > 0:
+        height = files[0].get("height", 0)
+        if height > 0:
+            resolution = f"{height}p"
+
+    # Get date - handle both formats
+    date = scene_data.get("date", "")
+    
     # Simple replacements
     replacements = {
-        "[DATE]": scene_data.get("date", ""),
+        "[DATE]": date,
         "[STUDIO]": scene_data.get("studio", {}).get("name", ""),
         "[PARENT_STUDIO]": scene_data.get("studio", {}).get("parentStudio", {}).get("name", ""),
         "[TITLE]": scene_data.get("title", ""),
         "[CONTAINER]": scene_data.get("container", ""),
         "[SIZE]": scene_data.get("size", ""),
         "[FORMAT]": scene_data.get("format", ""),
+        "[RESOLUTION]": resolution,
         "[PERFORMERS]": ", ".join([p.get("name", "") for p in scene_data.get("performers", [])]),
     }
 
@@ -43,13 +55,23 @@ def format_scene_name(template: str, scene_data: dict) -> str:
     for idx, perf in enumerate(performers, start=1):
         replacements[f"[PERFORMER_{idx}]"] = perf.get("name", "")
 
-    # Replace all tokens
+    # First pass: replace all tokens
     for token, val in replacements.items():
-        name = name.replace(token, val)
+        name = name.replace(token, str(val) if val else "")
 
-    # Cleanup double spaces and brackets
-    name = re.sub(r"\s+", " ", name).strip()
-    name = re.sub(r"\[\[([^\]]+)\]\]", r"[\1]", name)  # normalize [[TOKEN]] → [TOKEN]
+    # Second pass: handle optional tokens (double brackets)
+    # Remove [[TOKEN]] if empty, or convert [[VALUE]] to [VALUE] if not empty
+    def handle_optional(match):
+        content = match.group(1).strip()
+        return f"[{content}]" if content else ""
+    
+    name = re.sub(r"\[\[([^\]]*)\]\]", handle_optional, name)
+
+    # Cleanup: remove empty brackets, empty parentheses, double spaces
+    name = re.sub(r"\[\s*\]", "", name)  # remove empty []
+    name = re.sub(r"\(\s*\)", "", name)  # remove empty ()
+    name = re.sub(r"\s+", " ", name).strip()  # normalize spaces
+    
     return name
 
 
@@ -114,6 +136,10 @@ def lookup(
 
     payload = {"query": QUERY, "variables": {"id": stash_id}}
 
+    payload = {"query": QUERY, "variables": {"id": stash_id}}
+    print(f"[lookup] DEBUG - Query includes 'date': {'date' in QUERY}")
+    print(f"[lookup] DEBUG - First 300 chars of query: {QUERY[:300]}")
+
     try:
         print(f"[lookup] Sending request for Stash ID: {stash_id}")
         r = stash_session.post(STASH_GRAPHQL_URL, json=payload, timeout=10)
@@ -136,6 +162,9 @@ def lookup(
         # Update scene storage
         current_scene_data.clear()
         current_scene_data.update(scene)
+
+        print(f"[lookup] DEBUG - Date value: '{scene.get('date')}' (type: {type(scene.get('date'))})")
+        print(f"[lookup] DEBUG - Full scene data keys: {list(scene.keys())}")
 
         # --------------------
         # Text fields
